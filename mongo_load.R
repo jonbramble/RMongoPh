@@ -19,6 +19,7 @@ db <- "phdata"
 username <- Sys.getenv("MONGODBUSER")
 password <- Sys.getenv("MONGODBPWD")
 
+#set the experiment name
 experiment_name <- "SPY0005"
 
 namespace_ph <- paste(db, "ph_points", sep=".")
@@ -60,23 +61,30 @@ while (mongo.cursor.next(cursor)) {
 
 # put the data into a dataframe as times
 f_ph <- data.frame(tv_ph,ph,experiment_name)
+f_eh <- data.frame(tv_eh,eh,experiment_name)
 f_ph$datetime_ph <- as.POSIXlt(f_ph$tv_ph, origin="1970-01-01", tz = "BST")
-f_eh <- data.frame(tv_eh,eh)
 f_eh$datetime_eh <- as.POSIXlt(f_eh$tv_eh, origin="1970-01-01", tz = "BST")
 
 #set the start time for zero point
 hour = 13
-min = 34
-k = 0.02/60
+min = 32
+k = 0.018/60
 
 #create the offset in seconds
-offset = as.integer((as.Date(f_ph$datetime[1])))*86400 + hour*3600 + min*60
+offset_ph = as.integer((as.Date(f_ph$datetime[1])))*86400 + hour*3600 + min*60
+offset_eh = as.integer((as.Date(f_eh$datetime[1])))*86400 + hour*3600 + min*60
+offset_date_time_ph = as.POSIXlt(offset, origin="1970-01-01",tz = "BST")
+offset_date_time_eh = as.POSIXlt(offset, origin="1970-01-01",tz = "BST")
+
+#create the offset in seconds
 offset_date_time = as.POSIXlt(offset, origin="1970-01-01",tz = "BST")
-offset_date_time
 
 #shift the xaxis time points
 f_ph["t"] <- as.numeric(f_ph$datetime - offset_date_time, units="secs")
+f_eh["t"] <- as.numeric(f_eh$datetime - offset_date_time, units="secs")
+
 f_ph["R"] <- k*f_ph$t
+f_eh["R"] <- k*f_eh$t
 
 #calculate df/dt
 diff_f <- diff(f_ph$ph)
@@ -97,10 +105,14 @@ R2 = f_ph$ph[which(a2==max(a2))+offset_b]
 #plot(difff, xlim=c(0,length(difff)),ylim=c(0,0.1))
 #plot(f$ph,ylim=c(0,15))
 
+#set the theme for publication
 theme_set(theme_bw(base_size = 20))
 theme_white()
 
 p <- ggplot(f_ph, aes( R, ph )) 
 p + geom_line() + scale_x_continuous(limits = c(-0.1, 4))
+
+q <- ggplot(f_eh, aes( R, eh )) 
+q + geom_line() + scale_x_continuous(limits = c(-0.1, 4))
 
 
