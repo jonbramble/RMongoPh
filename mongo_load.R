@@ -3,8 +3,15 @@ library(ggplot2)
 library(lubridate)
 library(plyr)
 
+theme_white <- function() {
+  theme_update(panel.background = element_blank(),
+               panel.grid.major = element_blank())
+}
+
+#time conversion function
 unix2POSIXlt  <-  function (time)   
   structure(time, class = c("POSIXt", "POSIXlt")) 
+
 # mongo db connection, over internet doesn't work well so copy to local first
 host <- "localhost:27017"
 db <- "phdata"
@@ -20,18 +27,22 @@ namespace_eh <- paste(db, "eh_points", sep=".")
 #create the db connection
 mongo <- mongo.create(host=host , db=db, username=username, password=password)
 
+#create the buffer for the data
 buf <- mongo.bson.buffer.create()
 mongo.bson.buffer.append(buf, "experiment", experiment_name)
 query <- mongo.bson.from.buffer(buf)
 
+#get the length of the data arrays
 count_ph <- mongo.count(mongo, namespace_ph, query)
 count_eh <- mongo.count(mongo, namespace_eh, query)
 
+#create vectors for each variable
 ph <- vector()
 eh <- vector()
 tv_ph <- vector()
 tv_eh <- vector()
 
+#use a moving cursor to find the data from the mongodb
 cursor <- mongo.find(mongo, namespace_ph, query)
 while (mongo.cursor.next(cursor)) {
   val <- mongo.cursor.value(cursor)
@@ -39,6 +50,7 @@ while (mongo.cursor.next(cursor)) {
   ph[length(ph)+1] <- as.numeric(mongo.bson.value(val, "ph"))
 }
 
+#repeat on eh data
 cursor <- mongo.find(mongo, namespace_eh, query)
 while (mongo.cursor.next(cursor)) {
   val <- mongo.cursor.value(cursor)
@@ -46,37 +58,49 @@ while (mongo.cursor.next(cursor)) {
   eh[length(eh)+1] <- as.numeric(mongo.bson.value(val, "mv"))
 }
 
-f_ph <- data.frame(tv_ph,ph)
+# put the data into a dataframe as times
+f_ph <- data.frame(tv_ph,ph,experiment_name)
 f_ph$datetime_ph <- as.POSIXlt(f_ph$tv_ph, origin="1970-01-01", tz = "BST")
 f_eh <- data.frame(tv_eh,eh)
 f_eh$datetime_eh <- as.POSIXlt(f_eh$tv_eh, origin="1970-01-01", tz = "BST")
 
+#set the start time for zero point
 hour = 13
 min = 34
 k = 0.02/60
 
+#create the offset in seconds
 offset = as.integer((as.Date(f_ph$datetime[1])))*86400 + hour*3600 + min*60
 offset_date_time = as.POSIXlt(offset, origin="1970-01-01",tz = "BST")
 offset_date_time
 
-f["t"] <- as.numeric(f$datetime - offset_date_time, units="secs")
-f["R"] <- k*f$t
-difff <- diff(f$ph)
+#shift the xaxis time points
+f_ph["t"] <- as.numeric(f_ph$datetime - offset_date_time, units="secs")
+f_ph["R"] <- k*f_ph$t
+
+#calculate df/dt
+diff_f <- diff(f_ph$ph)
+#set the offset and search width
 offset_a = 1000
 offset_b = 2200
 width = 400
-a1 <- difff[offset_a:(offset_a+width)]
-a2 <- difff[offset_b:(offset_b+width)]
-#no strictly at the peak
-E1 = f$R[which(a1==max(a1))+offset_a]  
-R1 = f$ph[which(a1==max(a1))+offset_a]
-E2 = f$R[which(a2==max(a2))+offset_b]
-R2 = f$ph[which(a2==max(a2))+offset_b]
 
-plot(difff, xlim=c(0,length(difff)),ylim=c(0,0.1))
+a1 <- diff_f[offset_a:(offset_a+width)]
+a2 <- diff_f[offset_b:(offset_b+width)]
+#no strictly at the peak - bit slow here
+E1 = f_ph$R[which(a1==max(a1))+offset_a]  
+R1 = f_ph$ph[which(a1==max(a1))+offset_a]
+E2 = f_ph$R[which(a2==max(a2))+offset_b]
+R2 = f_ph$ph[which(a2==max(a2))+offset_b]
+
+#additional plot to look at peaks in graph, set the offsets accordingly
+#plot(difff, xlim=c(0,length(difff)),ylim=c(0,0.1))
 #plot(f$ph,ylim=c(0,15))
 
-p <- ggplot(f, aes( R, ph )) 
+theme_set(theme_bw(base_size = 20))
+theme_white()
+
+p <- ggplot(f_ph, aes( R, ph )) 
 p + geom_line() + scale_x_continuous(limits = c(-0.1, 4))
 
 
