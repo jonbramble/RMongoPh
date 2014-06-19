@@ -3,6 +3,8 @@ library(ggplot2)
 library(lubridate)
 library(plyr)
 
+source('multiplot.R')
+
 theme_white <- function() {
   theme_update(panel.background = element_blank(),
                panel.grid.major = element_blank())
@@ -89,7 +91,7 @@ f_eh["R"] <- k*f_eh$t
 #calculate df/dt
 diff_f <- diff(f_ph$ph)
 #set the offset and search width
-offset_a = 1000
+offset_a = 1400
 offset_b = 2200
 width = 400
 
@@ -102,17 +104,13 @@ E2 = f_ph$R[which(a2==max(a2))+offset_b]
 R2 = f_ph$ph[which(a2==max(a2))+offset_b]
 
 #additional plot to look at peaks in graph, set the offsets accordingly
-#plot(difff, xlim=c(0,length(difff)),ylim=c(0,0.1))
-#plot(f$ph,ylim=c(0,15))
+#plot(diff_f, xlim=c(0,length(diff_f)),ylim=c(0,0.1))
+#plot(f_ph$ph,ylim=c(0,15))
 
 #set the theme for publication
 theme_set(theme_bw(base_size = 20))
 theme_white()
 
-p <- ggplot(f_ph, aes( R, ph )) 
-p + geom_line() + scale_x_continuous(limits = c(-0.1, 4))
-
-q <- ggplot(f_eh, aes( R, eh )) 
-q + geom_line() + scale_x_continuous(limits = c(-0.1, 4))
-
-
+p <- ggplot(f_ph, aes( R, ph )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4))
+q <- ggplot(f_eh, aes( R, eh )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4)) + ylab("eh /mV")
+multiplot(p,q)
