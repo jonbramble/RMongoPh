@@ -22,17 +22,17 @@ username <- Sys.getenv("MONGODBUSER")
 password <- Sys.getenv("MONGODBPWD")
 
 #set the experiment name
-experiment_name <- "SPY0005"
+experiment_name <- "SPY0006"
 #set the start time for zero point
-hour = 13
-min = 30
+hour = 10
+min = 52
 k = 0.018/60
 
-offset_a = 1200
+offset_a = 800
 offset_b = 2000
 width = 400
 
-X="0.5"
+X="0.2"
 
 namespace_ph <- paste(db, "ph_points", sep=".")
 namespace_eh <- paste(db, "eh_points", sep=".")
@@ -112,9 +112,9 @@ R2 = f_ph$ph[which(a2==max(a2))+offset_b]
 theme_set(theme_bw(base_size = 20))
 theme_white()
 
-#p <- ggplot(f_ph, aes( R, ph )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4))
-#q <- ggplot(f_eh, aes( R, eh )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4)) + ylab("eh /mV")
-#multiplot(p,q)
+p <- ggplot(f_ph, aes( R, ph )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4))
+q <- ggplot(f_eh, aes( R, eh )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4)) + ylab("eh /mV")
+multiplot(p,q)
 
 E1
 R1
@@ -122,12 +122,12 @@ E2
 R2
 
 ph_name <- paste("f_ph_",experiment_name,sep="") 
-eh_name <- paste("e_ph_",experiment_name,sep="") 
+eh_name <- paste("f_eh_",experiment_name,sep="") 
 ph_file_name <- paste("f_ph_",experiment_name,".Rda",sep="") 
-eh_file_name <- paste("e_ph_",experiment_name,".Rda",sep="") 
+eh_file_name <- paste("f_eh_",experiment_name,".Rda",sep="") 
 
-assign(ph_name,f_ph)
-assign(eh_name,f_eh)
+#assign(ph_name,f_ph)
+#assign(eh_name,f_eh)
 
-save(ph_name,file=ph_file_name)
-save(eh_name,file=eh_file_name)
+save(f_ph,file=ph_file_name)
+save(f_eh,file=eh_file_name)
