@@ -16,7 +16,7 @@ unix2POSIXlt  <-  function (time)
 
 # mongo db connection, over internet doesn't work well so copy to local first
 host <- "localhost:27017"
-db <- "phdata"
+db <- "phjune"
 #get password from ~.REnviron file
 username <- Sys.getenv("MONGODBUSER")
 password <- Sys.getenv("MONGODBPWD")
@@ -27,6 +27,12 @@ experiment_name <- "SPY0005"
 hour = 13
 min = 30
 k = 0.018/60
+
+offset_a = 1200
+offset_b = 2000
+width = 400
+
+X="0.5"
 
 namespace_ph <- paste(db, "ph_points", sep=".")
 namespace_eh <- paste(db, "eh_points", sep=".")
@@ -66,8 +72,8 @@ while (mongo.cursor.next(cursor)) {
 }
 
 # put the data into a dataframe as times
-f_ph <- data.frame(tv_ph,ph,experiment_name)
-f_eh <- data.frame(tv_eh,eh,experiment_name)
+f_ph <- data.frame(tv_ph,ph,experiment_name,X)
+f_eh <- data.frame(tv_eh,eh,experiment_name,X)
 f_ph$datetime_ph <- as.POSIXlt(f_ph$tv_ph, origin="1970-01-01", tz = "BST")
 f_eh$datetime_eh <- as.POSIXlt(f_eh$tv_eh, origin="1970-01-01", tz = "BST")
 
@@ -89,9 +95,6 @@ f_eh["R"] <- k*f_eh$t
 #calculate df/dt
 diff_f <- diff(f_ph$ph)
 #set the offset and search width
-offset_a = 1200
-offset_b = 2200
-width = 400
 
 a1 <- diff_f[offset_a:(offset_a+width)]
 a2 <- diff_f[offset_b:(offset_b+width)]
@@ -102,18 +105,29 @@ E2 = f_ph$R[which(a2==max(a2))+offset_b]
 R2 = f_ph$ph[which(a2==max(a2))+offset_b]
 
 #additional plot to look at peaks in graph, set the offsets accordingly
-plot(diff_f, xlim=c(0,length(diff_f)),ylim=c(0,0.1))
+#plot(diff_f, xlim=c(0,length(diff_f)),ylim=c(0,0.1))
 #plot(f_ph$ph,ylim=c(0,15))
 
 #set the theme for publication
 theme_set(theme_bw(base_size = 20))
 theme_white()
 
-p <- ggplot(f_ph, aes( R, ph )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4))
-q <- ggplot(f_eh, aes( R, eh )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4)) + ylab("eh /mV")
-multiplot(p,q)
+#p <- ggplot(f_ph, aes( R, ph )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4))
+#q <- ggplot(f_eh, aes( R, eh )) + geom_line() + geom_vline(xintercept = E1) + geom_vline(xintercept = E2) + labs(title=experiment_name) + scale_x_continuous(limits = c(-0.1, 4)) + ylab("eh /mV")
+#multiplot(p,q)
 
 E1
 R1
 E2
 R2
+
+ph_name <- paste("f_ph_",experiment_name,sep="") 
+eh_name <- paste("e_ph_",experiment_name,sep="") 
+ph_file_name <- paste("f_ph_",experiment_name,".Rda",sep="") 
+eh_file_name <- paste("e_ph_",experiment_name,".Rda",sep="") 
+
+assign(ph_name,f_ph)
+assign(eh_name,f_eh)
+
+save(ph_name,file=ph_file_name)
+save(eh_name,file=eh_file_name)
