@@ -4,11 +4,7 @@ library(lubridate)
 library(plyr)
 
 source('multiplot.R')
-
-theme_white <- function() {
-  theme_update(panel.background = element_blank(),
-               panel.grid.major = element_blank())
-}
+source('theme_white.R')
 
 #time conversion function
 unix2POSIXlt  <-  function (time)   
